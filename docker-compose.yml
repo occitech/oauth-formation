@@ -1,0 +1,79 @@
+version: "3"
+services:
+  web:
+    build: ./docker/web/
+    networks:
+      - default
+      - traefik
+    ports:
+      - 80
+    volumes:
+      - ./app:/var/www/
+    depends_on:
+      - db
+    labels:
+      traefik.frontend.rule: "Host:www.oauth.test"
+      traefik.docker.network: traefik
+
+  db:
+    image: mariadb:10.2
+    volumes:
+      - db-data:/var/lib/mysql
+    ports:
+      - 3306
+    environment:
+      MYSQL_ROOT_PASSWORD: "root"
+      MYSQL_DATABASE: "oauth"
+      MYSQL_USER: "oauth"
+      MYSQL_PASSWORD: "oauth"
+    networks:
+      - default
+      - traefik
+
+  pma:
+    image: phpmyadmin/phpmyadmin:latest
+    depends_on:
+      - db
+    ports:
+      - 80
+    networks:
+      - default
+      - traefik
+    labels:
+      traefik.docker.network: traefik
+
+  composer:
+    networks:
+      - default
+      - traefik
+    build: ./docker/web/
+    volumes:
+      - ./app:/var/www
+      - $SSH_AUTH_SOCK:/ssh-agent
+      - $HOME/.ssh/known_hosts:/etc/ssh/ssh_known_hosts
+      - $HOME/.composer:/root/.composer
+    working_dir: /var/www
+    environment:
+      COMPOSER_AUTH: $COMPOSER_AUTH
+      SSH_AUTH_SOCK: /ssh-agent
+    entrypoint: /usr/local/bin/composer
+
+  symfony:
+    networks:
+      - default
+      - traefik
+    build: ./docker/web/
+    depends_on:
+      - db
+    volumes:
+      - ./app:/var/www
+    working_dir: /var/www
+    entrypoint: /var/www/bin/console
+
+volumes:
+  db-data:
+    driver: local
+
+networks:
+  traefik:
+    external: true
