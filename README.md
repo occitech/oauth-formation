@@ -10,9 +10,7 @@ make migrate
 
 ## Importer les données de base
 
-```shell
-cat dump.sql | docker-compose run --rm db -uoauth -poauth
-```
+Import `dump.sql` in your app (phpmyadmin is accessible on http://pma.oauth-formation.test)
 
 ## Run
 
